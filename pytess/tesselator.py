@@ -202,7 +202,7 @@ def voronoi(siteList,context):
           if not priorityQ.isEmpty():
               minpt = priorityQ.getMinPt()
 
-          if (newsite and (priorityQ.isEmpty() or cmp(newsite,minpt) < 0)):
+          if (newsite and (priorityQ.isEmpty() or newsite < minpt)):
               # newsite is smallest -  this is a site event
               context.outSite(newsite)
               
@@ -346,17 +346,34 @@ class Site(object):
     def dump(self):
         print("Site #%d (%g, %g)" % (self.sitenum,self.x,self.y))
 
-    def __cmp__(self,other):
+    def __eq__(self, other):
+        return (self.x, self.y) == (other.x, other.y)
+
+    def __ne__(self, other):
+        return not self == other
+
+    def __lt__(self, other):
         if self.y < other.y:
-            return -1
-        elif self.y > other.y:
-            return 1
-        elif self.x < other.x:
-            return -1
-        elif self.x > other.x:
-            return 1
+            return True
+        elif (self.y == other.y) and (self.x < other.x):
+            return True
         else:
-            return 0
+            return False
+
+    def __gt__(self, other):
+        if self.y > other.y:
+            return True
+        elif (self.y == other.y) and (self.x > other.x):
+            return True
+        else:
+            return False
+
+    def __le__(self, other):
+        return (self < other) or (self == other)
+
+    def __ge__(self, other):
+        return (self > other) or (self == other)
+
 
     def distance(self,other):
         dx = self.x - other.x
@@ -444,18 +461,33 @@ class Halfedge(object):
         else: print("None")
         print("ystar: ",   self.ystar) 
 
+    def __eq__(self, other):
+        return (self.vertex.x, self.ystar) == (other.vertex.x, other.ystar)
 
-    def __cmp__(self,other):
-        if self.ystar > other.ystar:
-            return 1
-        elif self.ystar < other.ystar:
-            return -1
-        elif self.vertex.x > other.vertex.x:
-            return 1
-        elif self.vertex.x < other.vertex.x:
-            return -1
+    def __ne__(self, other):
+        return not self == other
+
+    def __lt__(self, other):
+        if self.ystar < other.ystar:
+            return True
+        elif (self.ystar == other.ystar) and (self.vertex.x < other.vertex.x):
+            return True
         else:
-            return 0
+            return False
+
+    def __gt__(self, other):
+        if self.ystar > other.ystar:
+            return True
+        elif (self.ystar == other.ystar) and (self.vertex.x > other.vertex.x):
+            return True
+        else:
+            return False
+
+    def __le__(self, other):
+        return (self < other) or (self == other)
+
+    def __ge__(self, other):
+        return (self > other) or (self == other)
 
     def leftreg(self,default):
         if not self.edge: 
@@ -534,7 +566,7 @@ class Halfedge(object):
 
         xint = (e1.c*e2.b - e2.c*e1.b) / d
         yint = (e2.c*e1.a - e1.c*e2.a) / d
-        if(cmp(e1.reg[1],e2.reg[1]) < 0):
+        if e1.reg[1] < e2.reg[1]:
             he = self
             e = e1
         else:
@@ -652,7 +684,7 @@ class PriorityQueue(object):
         he.ystar  = site.y + offset
         last = self.hash[self.getBucket(he)]
         next = last.qnext
-        while((next is not None) and cmp(he,next) > 0):
+        while((next is not None) and he > next):
             last = next
             next = last.qnext
         he.qnext = last.qnext
